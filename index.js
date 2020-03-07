@@ -28,30 +28,30 @@ client.on('message', msg => {
     let intervalVerb = ''
 
     // Assign values to intervalVerb & intervalInteger to determine reminderTime
-    if (message.includes('minutes')) {
-        intervalVerb = 'minutes'
+    if (message.includes('minutes') || (message.includes('minutes'))) {
+        intervalVerb = 'm'
     }
 
-    if (message.includes('hours')) {
-        intervalVerb = 'hours'
+    if (message.includes('hours') || message.includes('hour')) {
+        intervalVerb = 'h'
     }
 
-    if (message.includes('days')) {
-        intervalVerb = 'days'
+    if (message.includes('days') || message.includes('day')) {
+        intervalVerb = 'd'
     }
 
-    if (message.includes('weeks')) {
-        intervalVerb = 'weeks'
+    if (message.includes('weeks') || message.includes('week')) {
+        intervalVerb = 'w'
     }
 
-    if (message.includes('months')) {
-        intervalVerb = 'months'
+    if (message.includes('months') || message.includes('month')) {
+        intervalVerb = 'M'
     }
     
     // Logic for !remindme command
     if (message.startsWith('!remindme')) {
-        const currentTime = moment().format('HH:mm')
-        const reminderTime = moment().add(intervalInteger, intervalVerb).format('HH:mm')
+        const currentTime = moment().format('dddd, MMMM Do YYYY, h:mm:ss a')
+        const reminderTime = moment().add(intervalInteger, intervalVerb).format('dddd, MMMM Do YYYY, h:mm:ss a')
         console.log(`Current time: ${currentTime}`)
         console.log(`Requested reminder time: ${reminderTime}`)
 
