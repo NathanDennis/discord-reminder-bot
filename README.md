@@ -1,5 +1,5 @@
 # discord-reminder-bot
-Request a reminder via DM through a discord bot
+Request a scheduled reminder via DM through a discord bot
 
 ### Current status
 - Successfully extracting keywords and integers from discord messages and assigning them to variables
