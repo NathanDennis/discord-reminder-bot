@@ -68,7 +68,8 @@ client.on('message', msg => {
         const embed = new MessageEmbed()
             .setTitle('New reminder:')
             .setDescription(`Reminder set for: ${reminderTime}`)
-        msg.channel.send(embed)
+        msg.author.send(embed)
+        msg.channel.send(`${msg.author} - A reminder confirmation has been sent to your DMs. I will DM you again at the requested reminder time`)
     }
 })
 
