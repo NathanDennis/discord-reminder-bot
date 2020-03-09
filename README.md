@@ -2,16 +2,17 @@
 Request a scheduled reminder via DM through a discord bot
 
 ### Current status
-- Successfully extracting keywords and integers from discord messages and assigning them to variables
-- Using variables after extraction with MomentJS to create a future reminderTime
+  - Bot is successfully adding reminders to DB on UTC timezone
+  - Successfully extracting discord user ID from DB and sending DM at correct time with original reminder message
+  - Removed db file from git tracking
+  
+- If you want to clone this repo for yourself, simply make a directory called `db` and a file called `reminders.db` in that folder
 
 Eventually, when the bot is in any given server, you will be able to type something along the lines of 
 `!remindme in 1 week to schedule a meeting with Bob for the 17th`
 
-The bot will then save that reminder datetime and DM you with the message you originally posted
+The bot will then save that reminder datetime and DM you with the reminder you requested
 
 ### In the works:
 
-Currently looking into how to store new reminder requests, where to store them and how to have the bot:
-1. Know when to extract a stored reminder and send it to the user
-2. Be able to actually DM the specific user with a string comprised of their original request
+- Refactor code / file structure to condense index.js
