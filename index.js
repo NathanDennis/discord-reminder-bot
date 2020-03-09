@@ -8,17 +8,20 @@ let db = new sqlite3.Database('./db/reminders.db', sqlite3.OPEN_READWRITE, (erro
     console.log('Connected to the SQlite database')
 })
 
-const cron = require('node-cron')
 const selectMessage = () => {
     db.serialize(() => {
         db.each("SELECT * FROM reminders", (error, row) => {
+            if (error) {
+                console.log(error.message)
+            }
             console.log(`${row.id} : ${row.message}`)
         })
     })
-    db.close()
 }
 
-cron.schedule('48 22 8 3 *', selectMessage)
+// const cron = require('node-cron')
+// cron.schedule('00-59 * * * *', selectMessage)
+setInterval(selectMessage, 60000)
 
 const { Client, MessageEmbed } = require('discord.js')
 const client = new Client()
@@ -76,7 +79,7 @@ client.on('message', msg => {
         const reminderTime = moment().add(intervalInteger, intervalVerb).format('YYYY-DD-MM HH:mm:ss') //2020-03-09 02:21:20
         // console.log(`Current time: ${currentTime}`)
         // console.log(`Requested reminder time: ${reminderTime}`)
-        console.log(msg.author)
+        // console.log(msg.author)
 
         // console.log(`Message from user: ${message}`)
         // console.log('==============')
@@ -102,8 +105,6 @@ client.on('message', msg => {
                 if (error) {
                     return console.log(error)
                 }
-                // Close db connection after saving
-                db.close()
             })
         })
     }
