@@ -14,5 +14,5 @@ Eventually, when the bot is in any given server, you will be able to type someth
 The bot will then save that reminder datetime and DM you with the reminder you requested
 
 ### In the works:
-
+- Working on being able to add a specific date to the !remindme command, rather than just a set number of minutes/hours/days etc
 - Refactor code / file structure to condense index.js
