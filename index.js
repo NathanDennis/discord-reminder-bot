@@ -8,21 +8,6 @@ let db = new sqlite3.Database('./db/reminders.db', sqlite3.OPEN_READWRITE, (erro
     console.log('Connected to the SQlite database')
 })
 
-const selectMessage = () => {
-    db.serialize(() => {
-        db.each("SELECT * FROM reminders", (error, row) => {
-            if (error) {
-                console.log(error.message)
-            }
-            console.log(`${row.id} : ${row.message}`)
-        })
-    })
-}
-
-// const cron = require('node-cron')
-// cron.schedule('00-59 * * * *', selectMessage)
-setInterval(selectMessage, 60000)
-
 const { Client, MessageEmbed } = require('discord.js')
 const client = new Client()
 const moment = require('moment')
@@ -33,15 +18,44 @@ const { TOKEN } = process.env
 
 client.on('ready', () => {
     console.log(`Logged in as ${client.user.tag}`)
+
 })
 
+const checkForReminders = () => {
+    db.serialize(() => {
+        // Select all messages older than the current dateTime
+        db.each("SELECT id, reminderTime, userID, message FROM reminders WHERE reminderTime < DATETIME()", (error, row) => {
+            if (error || !row) {
+                return console.log('Error or no row found')
+            }
+
+            // If reminders are found, fetch userIDs, then send the requested reminder through DM
+            client.users.fetch(row.userID).then((user) => {
+                user.send(`Hi, you asked to be reminded "${row.message}" - That's right now!`).catch(console.error)
+                console.log(`Message delivered: ${row.message}`)
+                console.log(`Message deleted successfully`)
+
+            // Delete message after DMing to user 
+            db.run("DELETE FROM reminders WHERE id = ?", [row.id])
+                console.log('Message sent and removed successfully')
+            })
+        })    
+    })
+}
+
+// Run checkForReminders every 60 seconds to scan DB for outstanding reminders
+setInterval(checkForReminders, 60000)
+
+// 
 client.on('message', msg => {
-    // trim msg.content of all excess whitespace
-    const message = msg.content.replace(/\s+/g, " ").replace(/^\s|\s$/g, "").toLowerCase()
+
+    // trim msg.content of all excess whitespace and format to remove !remindme from the message
+    const formattedMessage = msg.content.replace(/\s+/g, " ").replace(/^\s|\s$/g, "").toLowerCase()
+    const messageToDeliverToUser = formattedMessage.replace('!remindme', '')
 
     // Determine if message contains a number to assign to intervalInteger
     const checkForNumbersInMessage = () => {
-        const matches = message.match(/(\d+)/)
+        const matches = formattedMessage.match(/(\d+)/)
 
         if (matches) {
             return matches[0]
@@ -53,53 +67,47 @@ client.on('message', msg => {
     let intervalVerb = ''
 
     // Assign values to intervalVerb & intervalInteger to determine reminderTime
-    if (message.includes('minutes') || (message.includes('minutes'))) {
+    if (formattedMessage.includes('minutes') || (formattedMessage.includes('minute'))) {
         intervalVerb = 'm'
     }
 
-    if (message.includes('hours') || message.includes('hour')) {
+    if (formattedMessage.includes('hours') || formattedMessage.includes('hour')) {
         intervalVerb = 'h'
     }
 
-    if (message.includes('days') || message.includes('day')) {
+    if (formattedMessage.includes('days') || formattedMessage.includes('day')) {
         intervalVerb = 'd'
     }
 
-    if (message.includes('weeks') || message.includes('week')) {
+    if (formattedMessage.includes('weeks') || formattedMessage.includes('week')) {
         intervalVerb = 'w'
     }
 
-    if (message.includes('months') || message.includes('month')) {
+    if (formattedMessage.includes('months') || formattedMessage.includes('month')) {
         intervalVerb = 'M'
+    }
+
+    if (formattedMessage.includes('years') || formattedMessage.includes('year')) {
+        intervalVerb = 'y'
     }
     
     // Logic for !remindme command
-    if (message.startsWith('!remindme')) {
-        const currentTime = moment().format('dddd, MMMM Do YYYY, h:mm:ss a')
-        const reminderTime = moment().add(intervalInteger, intervalVerb).format('YYYY-DD-MM HH:mm:ss') //2020-03-09 02:21:20
-        // console.log(`Current time: ${currentTime}`)
-        // console.log(`Requested reminder time: ${reminderTime}`)
-        // console.log(msg.author)
+    if (formattedMessage.startsWith('!remindme')) {
 
-        // console.log(`Message from user: ${message}`)
-        // console.log('==============')
-        // console.log(`Verb: ${intervalVerb}`)
-        // console.log(typeof(intervalVerb))
-        // console.log(`Integer: ${intervalInteger}`)
-        // console.log(typeof(intervalInteger))
-        // console.log('============')
-        // console.log(`Current time: ${currentTime}`)
-        // console.log(`Reminder time: ${reminderTime}`)
+        // Format current time, and time to send reminder, to UTC timezone
+        const currentTime = moment().utc().format('YYYY-MM-DD HH:mm:ss')
+        const reminderTime = moment().utc().add(intervalInteger, intervalVerb).format('YYYY-MM-DD HH:mm:ss')
 
+        // Create embedded message to DM to user with Title and Description
         const embed = new MessageEmbed()
-            .setTitle('New reminder:')
+            .setTitle(`New reminder: ${messageToDeliverToUser}`)
             .setDescription(`Reminder set for: ${reminderTime}`)
-        // msg.author.send(embed)
+        msg.author.send(embed)
         msg.channel.send(`${msg.author} - A reminder confirmation has been sent to your DMs. I will DM you again at the requested reminder time`)
 
         // Add reminder to DB
         db.serialize(() => {
-            db.run("INSERT INTO reminders (user, message, reminderTime) VALUES (?, ?, ?)", [msg.author.username, message, reminderTime])
+            db.run("INSERT INTO reminders (userID, userName, message, createdAt, reminderTime) VALUES (?, ?, ?, ?, ?)", [msg.author.id, msg.author.username, messageToDeliverToUser, currentTime, reminderTime])
 
             db.run("SELECT * FROM reminders", (error) => {
                 if (error) {
@@ -110,6 +118,7 @@ client.on('message', msg => {
     }
 })
 
+// Log bot into discord
 client.login(TOKEN).then(() => {
     console.log('We logged in bois')
 }).catch(error => {
