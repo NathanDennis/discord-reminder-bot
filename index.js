@@ -1,3 +1,25 @@
+// db setup
+const sqlite3 = require('sqlite3').verbose()
+let db = new sqlite3.Database('./db/reminders.db', sqlite3.OPEN_READWRITE, (error) => {
+    if (error) {
+        return console.log(error.message)
+    }
+
+    console.log('Connected to the SQlite database')
+})
+
+const cron = require('node-cron')
+const selectMessage = () => {
+    db.serialize(() => {
+        db.each("SELECT * FROM reminders", (error, row) => {
+            console.log(`${row.id} : ${row.message}`)
+        })
+    })
+    db.close()
+}
+
+cron.schedule('48 22 8 3 *', selectMessage)
+
 const { Client, MessageEmbed } = require('discord.js')
 const client = new Client()
 const moment = require('moment')
@@ -51,9 +73,10 @@ client.on('message', msg => {
     // Logic for !remindme command
     if (message.startsWith('!remindme')) {
         const currentTime = moment().format('dddd, MMMM Do YYYY, h:mm:ss a')
-        const reminderTime = moment().add(intervalInteger, intervalVerb).format('dddd, MMMM Do YYYY, h:mm:ss a')
-        console.log(`Current time: ${currentTime}`)
-        console.log(`Requested reminder time: ${reminderTime}`)
+        const reminderTime = moment().add(intervalInteger, intervalVerb).format('YYYY-DD-MM HH:mm:ss') //2020-03-09 02:21:20
+        // console.log(`Current time: ${currentTime}`)
+        // console.log(`Requested reminder time: ${reminderTime}`)
+        console.log(msg.author)
 
         // console.log(`Message from user: ${message}`)
         // console.log('==============')
@@ -68,8 +91,21 @@ client.on('message', msg => {
         const embed = new MessageEmbed()
             .setTitle('New reminder:')
             .setDescription(`Reminder set for: ${reminderTime}`)
-        msg.author.send(embed)
+        // msg.author.send(embed)
         msg.channel.send(`${msg.author} - A reminder confirmation has been sent to your DMs. I will DM you again at the requested reminder time`)
+
+        // Add reminder to DB
+        db.serialize(() => {
+            db.run("INSERT INTO reminders (user, message, reminderTime) VALUES (?, ?, ?)", [msg.author.username, message, reminderTime])
+
+            db.run("SELECT * FROM reminders", (error) => {
+                if (error) {
+                    return console.log(error)
+                }
+                // Close db connection after saving
+                db.close()
+            })
+        })
     }
 })
 
