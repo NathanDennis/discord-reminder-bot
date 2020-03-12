@@ -33,7 +33,6 @@ const createNewReminder = (msg) => {
     const embed = createEmbed(messageToDeliverToUser, reminderTime)
     msg.author.send(embed)
     msg.channel.send(`${msg.author} - A reminder confirmation has been sent to your DMs. I will DM you again at the requested reminder time`)
-
 }
 
 module.exports = createNewReminder

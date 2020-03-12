@@ -6,7 +6,8 @@ const { TOKEN } = process.env
 
 // Bot functions import
 const checkForReminders = require('./src/functions/checkForReminders')
-const handleNewReminder = require('./src/functions/handleNewReminder')
+// const handleNewReminder = require('./src/functions/handleNewReminder')
+const createNewReminder = require('./src/functions/createNewReminder')
 
 // Confirm successful log in
 client.on('ready', () => {
@@ -18,7 +19,7 @@ setInterval(checkForReminders, 10000)
 
 // Parse reminder request, save to DB, DM confirmation to user
 client.on('message', (msg) => {
-    handleNewReminder(msg)
+    createNewReminder(msg)
 })
 
 // Log bot into discord
